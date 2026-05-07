@@ -34,6 +34,8 @@ const initialLeads = [
   { id: '7', name: 'Cody Fisher', company: 'FireBolt', status: 'QUALIFIED', value: 9500, priority: 'MEDIUM' },
 ]
 
+import { CreateLeadDialog } from '@/components/leads/CreateLeadDialog'
+
 export default function PipelinePage() {
   const [leads, setLeads] = useState(initialLeads)
 
@@ -50,10 +52,7 @@ export default function PipelinePage() {
           <Badge variant="outline" className="h-9 px-4 rounded-xl border-slate-200">
             Total Value: ${leads.reduce((acc, curr) => acc + curr.value, 0).toLocaleString()}
           </Badge>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Lead
-          </Button>
+          <CreateLeadDialog />
         </div>
       </div>
 

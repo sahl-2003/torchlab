@@ -34,70 +34,101 @@ import {
   Pie
 } from 'recharts'
 
-const stats = [
-  { 
-    title: 'Total Revenue', 
-    value: '$128,430', 
-    change: '+12.5%', 
-    trend: 'up', 
-    icon: DollarSign,
-    color: 'text-emerald-600',
-    bg: 'bg-emerald-50 dark:bg-emerald-900/20'
-  },
-  { 
-    title: 'Active Leads', 
-    value: '842', 
-    change: '+18%', 
-    trend: 'up', 
-    icon: Users,
-    color: 'text-blue-600',
-    bg: 'bg-blue-50 dark:bg-blue-900/20'
-  },
-  { 
-    title: 'Won Deals', 
-    value: '48', 
-    change: '+5.4%', 
-    trend: 'up', 
-    icon: Target,
-    color: 'text-purple-600',
-    bg: 'bg-purple-50 dark:bg-purple-900/20'
-  },
-  { 
-    title: 'Conversion Rate', 
-    value: '14.2%', 
-    change: '-2.1%', 
-    trend: 'down', 
-    icon: ArrowUpRight,
-    color: 'text-orange-600',
-    bg: 'bg-orange-50 dark:bg-orange-900/20'
-  },
-]
-
-const chartData = [
-  { name: 'Jan', revenue: 4000, leads: 240 },
-  { name: 'Feb', revenue: 3000, leads: 198 },
-  { name: 'Mar', revenue: 2000, leads: 980 },
-  { name: 'Apr', revenue: 2780, leads: 390 },
-  { name: 'May', revenue: 1890, leads: 480 },
-  { name: 'Jun', revenue: 2390, leads: 380 },
-  { name: 'Jul', revenue: 3490, leads: 430 },
-]
-
-const statusData = [
-  { name: 'New', value: 400, color: '#3b82f6' },
-  { name: 'Contacted', value: 300, color: '#6366f1' },
-  { name: 'Qualified', value: 300, color: '#8b5cf6' },
-  { name: 'Won', value: 200, color: '#10b981' },
-]
-
-const recentActivities = [
-  { id: 1, type: 'status', lead: 'Sarah Chen', action: 'moved to Qualified', time: '2 hours ago' },
-  { id: 2, type: 'note', lead: 'TechFlow Inc', action: 'added a new follow-up note', time: '4 hours ago' },
-  { id: 3, type: 'creation', lead: 'John Miller', action: 'was created as a new lead', time: '6 hours ago' },
-  { id: 4, type: 'status', lead: 'Global Logistics', action: 'marked as Won deal', time: 'yesterday' },
-]
+import { toast } from 'sonner'
+import { CreateLeadDialog } from '@/components/leads/CreateLeadDialog'
 
 export default function DashboardPage() {
+  const [metrics, setMetrics] = React.useState({
+    totalLeads: 0,
+    newLeads: 0,
+    qualifiedLeads: 0,
+    wonLeads: 0,
+    lostLeads: 0,
+    totalValue: 0,
+    wonValue: 0,
+  })
+
+  React.useEffect(() => {
+    fetch('/api/leads')
+      .then(res => res.json())
+      .then(leads => {
+        if (!Array.isArray(leads)) return
+        const stats = {
+          totalLeads: leads.length,
+          newLeads: leads.filter((l: any) => l.status === 'NEW').length,
+          qualifiedLeads: leads.filter((l: any) => l.status === 'QUALIFIED').length,
+          wonLeads: leads.filter((l: any) => l.status === 'WON').length,
+          lostLeads: leads.filter((l: any) => l.status === 'LOST').length,
+          totalValue: leads.reduce((acc: number, curr: any) => acc + (curr.estimatedValue || 0), 0),
+          wonValue: leads.filter((l: any) => l.status === 'WON').reduce((acc: number, curr: any) => acc + (curr.estimatedValue || 0), 0),
+        }
+        setMetrics(stats)
+      })
+  }, [])
+
+  const stats = [
+    { 
+      title: 'Total Leads', 
+      value: metrics.totalLeads.toString(), 
+      change: '+4.5%', 
+      trend: 'up', 
+      icon: Users,
+      color: 'text-blue-600',
+      bg: 'bg-blue-50 dark:bg-blue-900/20'
+    },
+    { 
+      title: 'Won Value', 
+      value: `$${metrics.wonValue.toLocaleString()}`, 
+      change: '+12.5%', 
+      trend: 'up', 
+      icon: DollarSign,
+      color: 'text-emerald-600',
+      bg: 'bg-emerald-50 dark:bg-emerald-900/20'
+    },
+    { 
+      title: 'Total Pipeline', 
+      value: `$${metrics.totalValue.toLocaleString()}`, 
+      change: '+8.2%', 
+      trend: 'up', 
+      icon: Briefcase,
+      color: 'text-indigo-600',
+      bg: 'bg-indigo-50 dark:bg-indigo-900/20'
+    },
+    { 
+      title: 'Won Deals', 
+      value: metrics.wonLeads.toString(), 
+      change: '+5.4%', 
+      trend: 'up', 
+      icon: Target,
+      color: 'text-purple-600',
+      bg: 'bg-purple-50 dark:bg-purple-900/20'
+    },
+  ]
+
+  const chartData = [
+    { name: 'Jan', revenue: 4000, leads: 240 },
+    { name: 'Feb', revenue: 3000, leads: 198 },
+    { name: 'Mar', revenue: 2000, leads: 980 },
+    { name: 'Apr', revenue: 2780, leads: 390 },
+    { name: 'May', revenue: 1890, leads: 480 },
+    { name: 'Jun', revenue: 2390, leads: 380 },
+    { name: 'Jul', revenue: 3490, leads: 430 },
+  ]
+
+  const statusData = [
+    { name: 'New', value: metrics.newLeads, color: '#3b82f6' },
+    { name: 'Qualified', value: metrics.qualifiedLeads, color: '#8b5cf6' },
+    { name: 'Won', value: metrics.wonLeads, color: '#10b981' },
+    { name: 'Lost', value: metrics.lostLeads, color: '#f43f5e' },
+  ]
+
+  const recentActivities = [
+    { id: 1, type: 'status', lead: 'Sarah Chen', action: 'moved to Qualified', time: '2 hours ago' },
+    { id: 2, type: 'note', lead: 'TechFlow Inc', action: 'added a new follow-up note', time: '4 hours ago' },
+    { id: 3, type: 'creation', lead: 'John Miller', action: 'was created as a new lead', time: '6 hours ago' },
+    { id: 4, type: 'status', lead: 'Global Logistics', action: 'marked as Won deal', time: 'yesterday' },
+  ]
+
   return (
     <div className="space-y-8 pb-10">
       <div className="flex items-center justify-between">
@@ -105,9 +136,7 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Dashboard</h1>
           <p className="text-slate-500 dark:text-slate-400">Welcome back, Admin. Here's what's happening today.</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 h-11">
-          + Add New Lead
-        </Button>
+        <CreateLeadDialog />
       </div>
 
       {/* Stats Grid */}
@@ -151,7 +180,12 @@ export default function DashboardPage() {
               <CardTitle className="text-xl font-bold">Revenue Overview</CardTitle>
               <CardDescription>Monthly revenue growth and performance</CardDescription>
             </div>
-            <Button variant="outline" size="sm" className="rounded-xl h-9">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="rounded-xl h-9"
+              onClick={() => toast.success("Generating report... Your download will start shortly.")}
+            >
               Download Report
             </Button>
           </CardHeader>

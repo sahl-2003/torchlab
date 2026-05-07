@@ -58,38 +58,56 @@ const priorityColors: any = {
   URGENT: "bg-red-600 text-white animate-pulse",
 }
 
+import { CreateLeadDialog } from '@/components/leads/CreateLeadDialog'
+import { EditLeadDialog } from '@/components/leads/EditLeadDialog'
+import Link from 'next/link'
+
 export default function LeadsPage() {
+  // ... existing states ...
   const [leads, setLeads] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('ALL')
+  const [sourceFilter, setSourceFilter] = useState('ALL')
+  const [users, setUsers] = useState<any[]>([])
 
   useEffect(() => {
-    // Simulate fetching
-    const fetchLeads = async () => {
-      setIsLoading(true)
-      try {
-        // Since we might not have a real DB connection, we provide high-quality fallback data
-        const res = await fetch('/api/leads').catch(() => null)
-        if (res && res.ok) {
-          const data = await res.json()
-          setLeads(data)
-        } else {
-          // Mock data for impressive UI demonstration
-          const mockLeads = [
-            { id: '1', name: 'Sarah Chen', company: 'Nexus Dynamics', email: 'sarah@nexus.com', phone: '+1 555-0123', status: 'QUALIFIED', priority: 'HIGH', estimatedValue: 12500, createdAt: new Date().toISOString() },
-            { id: '2', name: 'James Wilson', company: 'Global Logistics', email: 'j.wilson@globallog.com', phone: '+1 555-0456', status: 'NEW', priority: 'MEDIUM', estimatedValue: 8400, createdAt: new Date().toISOString() },
-            { id: '3', name: 'Elena Rodriguez', company: 'CloudScale Inc', email: 'elena@cloudscale.io', phone: '+1 555-0789', status: 'PROPOSAL_SENT', priority: 'URGENT', estimatedValue: 32000, createdAt: new Date().toISOString() },
-            { id: '4', name: 'Michael Brown', company: 'AeroTech Systems', email: 'm.brown@aerotech.com', phone: '+1 555-1011', status: 'WON', priority: 'LOW', estimatedValue: 15700, createdAt: new Date().toISOString() },
-            { id: '5', name: 'Linda Zhang', company: 'Vista Media', email: 'linda@vistamedia.com', phone: '+1 555-1213', status: 'CONTACTED', priority: 'MEDIUM', estimatedValue: 5200, createdAt: new Date().toISOString() },
-          ]
-          setLeads(mockLeads)
-        }
-      } finally {
-        setIsLoading(false)
-      }
-    }
+    fetch('/api/users').then(res => res.json()).then(setUsers)
+  }, [])
 
+  const fetchLeads = async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch('/api/leads').catch(() => null)
+      if (res && res.ok) {
+        const data = await res.json()
+        setLeads(data)
+      } else {
+        const mockLeads = [
+          { id: '1', name: 'Sarah Chen', company: 'Nexus Dynamics', email: 'sarah@nexus.com', phone: '+1 555-0123', status: 'QUALIFIED', source: 'LINKEDIN', estimatedValue: 12500, createdAt: new Date().toISOString() },
+          { id: '2', name: 'James Wilson', company: 'Global Logistics', email: 'j.wilson@globallog.com', phone: '+1 555-0456', status: 'NEW', source: 'WEBSITE', estimatedValue: 8400, createdAt: new Date().toISOString() },
+        ]
+        setLeads(mockLeads)
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDeleteLead = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this lead?')) return
+    
+    try {
+      const res = await fetch(`/api/leads/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to delete')
+      toast.success('Lead deleted successfully')
+      fetchLeads()
+    } catch (error) {
+      toast.error('Could not delete lead')
+    }
+  }
+
+  useEffect(() => {
     fetchLeads()
   }, [])
 
@@ -100,13 +118,14 @@ export default function LeadsPage() {
       lead.email.toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesStatus = statusFilter === 'ALL' || lead.status === statusFilter
+    const matchesSource = sourceFilter === 'ALL' || lead.source === sourceFilter
     
-    return matchesSearch && matchesStatus
+    return matchesSearch && matchesStatus && matchesSource
   })
 
   const exportToCSV = () => {
-    const headers = ['Name', 'Company', 'Email', 'Phone', 'Status', 'Priority', 'Value']
-    const data = leads.map(l => [l.name, l.company, l.email, l.phone, l.status, l.priority, l.estimatedValue])
+    const headers = ['Name', 'Company', 'Email', 'Phone', 'Status', 'Source', 'Value']
+    const data = leads.map(l => [l.name, l.company, l.email, l.phone, l.status, l.source || 'MANUAL', l.estimatedValue])
     const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + data.map(e => e.join(",")).join("\n")
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement("a")
@@ -137,10 +156,7 @@ export default function LeadsPage() {
             <Download className="w-4 h-4 mr-2" />
             Export CSV
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Lead
-          </Button>
+          <CreateLeadDialog onLeadCreated={fetchLeads} />
         </div>
       </div>
 
@@ -158,12 +174,12 @@ export default function LeadsPage() {
             </div>
             <div className="flex items-center gap-3">
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger render={
                   <Button variant="outline" className="rounded-xl h-11 border-slate-100 dark:border-slate-800">
                     <Filter className="w-4 h-4 mr-2" />
                     {statusFilter === 'ALL' ? 'All Statuses' : statusFilter}
                   </Button>
-                </DropdownMenuTrigger>
+                } />
                 <DropdownMenuContent align="end" className="rounded-xl w-48">
                   <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -176,6 +192,25 @@ export default function LeadsPage() {
                   <DropdownMenuItem onClick={() => setStatusFilter('LOST')}>Lost</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger render={
+                  <Button variant="outline" className="rounded-xl h-11 border-slate-100 dark:border-slate-800">
+                    <Filter className="w-4 h-4 mr-2" />
+                    {sourceFilter === 'ALL' ? 'All Sources' : sourceFilter}
+                  </Button>
+                } />
+                <DropdownMenuContent align="end" className="rounded-xl w-48">
+                  <DropdownMenuLabel>Filter by Source</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSourceFilter('ALL')}>All Sources</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSourceFilter('LINKEDIN')}>LinkedIn</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSourceFilter('WEBSITE')}>Website</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSourceFilter('REFERRAL')}>Referral</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSourceFilter('COLD_OUTREACH')}>Cold Outreach</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSourceFilter('MANUAL')}>Manual Entry</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </CardHeader>
@@ -186,7 +221,8 @@ export default function LeadsPage() {
                 <TableRow className="hover:bg-transparent border-slate-50 dark:border-slate-800">
                   <TableHead className="font-semibold py-4">Lead Name</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
-                  <TableHead className="font-semibold">Priority</TableHead>
+                  <TableHead className="font-semibold">Source</TableHead>
+                  <TableHead className="font-semibold">Assigned To</TableHead>
                   <TableHead className="font-semibold">Company</TableHead>
                   <TableHead className="font-semibold text-right">Value</TableHead>
                   <TableHead className="font-semibold text-right">Action</TableHead>
@@ -218,9 +254,12 @@ export default function LeadsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={cn("rounded-full px-3 border-none", priorityColors[lead.priority])}>
-                        {lead.priority}
+                      <Badge variant="outline" className="rounded-full px-3 border-none bg-slate-100 text-slate-100 dark:bg-slate-800 dark:text-slate-400">
+                        {lead.source || 'MANUAL'}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-sm text-slate-600 dark:text-slate-400">{lead.salesperson?.name || 'Unassigned'}</span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
@@ -233,22 +272,22 @@ export default function LeadsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
+                        <DropdownMenuTrigger render={
                           <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 h-9 w-9">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                        </DropdownMenuTrigger>
+                        } />
                         <DropdownMenuContent align="end" className="rounded-xl w-40">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>
-                            <Eye className="w-4 h-4 mr-2" /> View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="w-4 h-4 mr-2" /> Edit Lead
-                          </DropdownMenuItem>
+                          <DropdownMenuItem render={
+                            <Link href={`/dashboard/leads/${lead.id}`}>
+                              <Eye className="w-4 h-4 mr-2" /> View Details
+                            </Link>
+                          } />
+                          <EditLeadDialog lead={lead} onLeadUpdated={fetchLeads} />
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-rose-600">
+                          <DropdownMenuItem className="text-rose-600" onClick={() => handleDeleteLead(lead.id)}>
                             <Trash2 className="w-4 h-4 mr-2" /> Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>

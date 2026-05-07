@@ -51,29 +51,63 @@ const mockLead = {
   ]
 }
 
+import { toast } from 'sonner'
+import { EditLeadDialog } from '@/components/leads/EditLeadDialog'
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu'
+
 export default function LeadDetailsPage() {
   const [noteHeader, setNoteHeader] = useState('')
 
   return (
     <div className="space-y-8 pb-10">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 border border-slate-200 dark:border-slate-800" asChild>
-          <Link href="/dashboard/leads">
+        <Link href="/dashboard/leads">
+          <Button variant="ghost" size="icon" className="rounded-full h-10 w-10 border border-slate-200 dark:border-slate-800">
             <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
+          </Button>
+        </Link>
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{mockLead.name}</h1>
           <p className="text-slate-500">{mockLead.company} • Lead Details</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Button variant="outline" className="rounded-xl">
-             <Edit className="w-4 h-4 mr-2" />
-             Edit Lead
-          </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
-             Action
-          </Button>
+          <EditLeadDialog 
+            lead={mockLead} 
+            trigger={
+              <Button variant="outline" className="rounded-xl">
+                 <Edit className="w-4 h-4 mr-2" />
+                 Edit Lead
+              </Button>
+            } 
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger render={
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
+                 Action
+              </Button>
+            } />
+            <DropdownMenuContent align="end" className="rounded-xl w-48">
+              <DropdownMenuLabel>Communicate</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => toast.success("Opening email composer...")}>
+                <Mail className="w-4 h-4 mr-2" /> Send Email
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast.success("Dialing lead...")}>
+                <Phone className="w-4 h-4 mr-2" /> Start Call
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => toast.info("Activity logged")}>
+                Log Interaction
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -203,12 +237,14 @@ export default function LeadDetailsPage() {
                        <CardContent className="p-5">
                           <div className="flex justify-between items-start mb-3">
                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 text-xs font-bold uppercase">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold uppercase border-2 border-white shadow-sm">
                                    {note.user.slice(0, 2)}
                                 </div>
-                                <span className="text-sm font-bold">{note.user}</span>
+                                <div className="flex flex-col">
+                                   <span className="text-sm font-bold text-slate-900">{note.user}</span>
+                                   <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">{note.date}</span>
+                                </div>
                              </div>
-                             <span className="text-xs text-slate-400">{note.date}</span>
                           </div>
                           <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed italic">
                              "{note.content}"
@@ -235,7 +271,13 @@ export default function LeadDetailsPage() {
                         <Calendar className="w-10 h-10 text-slate-300 mb-4" />
                         <h4 className="font-bold text-slate-900">No follow-ups scheduled</h4>
                         <p className="text-sm text-slate-500 max-w-xs mt-1">Schedule a follow-up to ensure you don't lose track of this lead.</p>
-                        <Button variant="outline" className="mt-6 rounded-xl">Set Reminder</Button>
+                        <Button 
+                          variant="outline" 
+                          className="mt-6 rounded-xl"
+                          onClick={() => toast.success("Follow-up reminder set for next Tuesday.")}
+                        >
+                          Set Reminder
+                        </Button>
                     </div>
                   </CardContent>
                </Card>

@@ -9,7 +9,7 @@ import {
   BadgeCheck,
   Building2,
   Calendar,
-  MoreVertical,
+  MoreHorizontal,
   Plus,
   Briefcase
 } from 'lucide-react'
@@ -17,6 +17,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuLabel, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu'
+import { toast } from 'sonner'
 
 const deals = [
   { id: '1', title: 'Enterprise Software License', client: 'Nexus Dynamics', value: 45000, stage: 'Final Negotiation', probability: '90%', expectedClose: 'May 24, 2024' },
@@ -24,6 +33,8 @@ const deals = [
   { id: '3', title: 'System Migration Project', client: 'Global Logistics', value: 82000, stage: 'Discovery', probability: '20%', expectedClose: 'Aug 05, 2024' },
   { id: '4', title: 'Subscription Renewal', client: 'AeroTech Systems', value: 5400, stage: 'Won', probability: '100%', expectedClose: 'May 01, 2024' },
 ]
+
+import { CreateDealDialog } from '@/components/deals/CreateDealDialog'
 
 export default function DealsPage() {
   return (
@@ -33,9 +44,7 @@ export default function DealsPage() {
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Deals Management</h1>
           <p className="text-slate-500">Track and manage high-value opportunities in your sales funnel.</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl">
-           <Plus className="w-4 h-4 mr-2" /> New Deal
-        </Button>
+        <CreateDealDialog />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -85,7 +94,8 @@ export default function DealsPage() {
                     <TableHead className="font-bold">Value</TableHead>
                     <TableHead className="font-bold">Stage</TableHead>
                     <TableHead className="font-bold">Probability</TableHead>
-                    <TableHead className="font-bold text-right">Expected Close</TableHead>
+                    <TableHead className="font-bold">Expected Close</TableHead>
+                    <TableHead className="font-bold text-right">Action</TableHead>
                  </TableRow>
               </TableHeader>
               <TableBody>
@@ -112,7 +122,30 @@ export default function DealsPage() {
                              <span className="text-xs font-bold text-slate-500">{deal.probability}</span>
                           </div>
                        </TableCell>
-                       <TableCell className="text-right text-slate-500 text-sm">{deal.expectedClose}</TableCell>
+                       <TableCell className="text-slate-500 text-sm">{deal.expectedClose}</TableCell>
+                       <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger render={
+                              <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-100 h-9 w-9">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            } />
+                            <DropdownMenuContent align="end" className="rounded-xl w-40">
+                              <DropdownMenuLabel>Deal Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => toast.success("Opening deal workshop...")}>
+                                Edit Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => toast.info("Stage updated successfully")}>
+                                Change Stage
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-rose-600" onClick={() => toast.error("Deals cannot be deleted in demo mode")}>
+                                Archive Deal
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                       </TableCell>
                     </TableRow>
                  ))}
               </TableBody>

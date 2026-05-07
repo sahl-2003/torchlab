@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { 
   LineChart, 
   Line, 
@@ -83,9 +84,19 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <Card className="lg:col-span-2 border-none shadow-sm rounded-3xl overflow-hidden h-[450px]">
-           <CardHeader>
-              <CardTitle>Revenue Forecast vs Actual</CardTitle>
-              <CardDescription>Tracking monthly revenue against quarterly targets</CardDescription>
+           <CardHeader className="flex flex-row items-center justify-between">
+              <div className="space-y-1">
+                <CardTitle>Revenue Forecast vs Actual</CardTitle>
+                <CardDescription>Tracking monthly revenue against quarterly targets</CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="rounded-xl h-9"
+                onClick={() => toast.success("Generating analytics report... Your PDF will be ready in a moment.")}
+              >
+                Download Report
+              </Button>
            </CardHeader>
            <CardContent className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
