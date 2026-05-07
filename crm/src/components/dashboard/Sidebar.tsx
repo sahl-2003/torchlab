@@ -100,13 +100,13 @@ export default function Sidebar() {
           <Button 
             variant="ghost" 
             className="w-full justify-start gap-3 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10"
-            asChild
-          >
-            <Link href="/api/auth/logout">
-              <LogOut className="w-5 h-5" />
-              {!isCollapsed && <span>Sign Out</span>}
-            </Link>
-          </Button>
+            render={
+              <Link href="/api/auth/logout">
+                <LogOut className="w-5 h-5" />
+                {!isCollapsed && <span>Sign Out</span>}
+              </Link>
+            }
+          />
         </div>
       </div>
     </aside>

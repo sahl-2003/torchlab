@@ -371,10 +371,11 @@ function PipelineCard({ lead, isDragging = false }: { lead: any, isDragging?: bo
         `}>
           {lead.priority}
         </Badge>
-        <Link href={`/dashboard/leads/${lead.id}`}>
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </Button>
+        <Link 
+          href={`/dashboard/leads/${lead.id}`}
+          className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
         </Link>
       </div>
       

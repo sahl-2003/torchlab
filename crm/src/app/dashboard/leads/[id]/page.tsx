@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback, use } from 'react'
 import { motion } from 'framer-motion'
 import { 
   ArrowLeft, 
@@ -27,43 +27,95 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
 import { format } from 'date-fns'
 
-const mockLead = {
-  id: '1',
-  name: 'Sarah Chen',
-  company: 'Nexus Dynamics',
-  email: 'sarah@nexus.com',
-  phone: '+1 555-0123',
-  source: 'LinkedIn',
-  status: 'QUALIFIED',
-  priority: 'HIGH',
-  estimatedValue: 12500,
-  healthScore: 84,
-  createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-  updatedAt: new Date().toISOString(),
-  notes: [
-    { id: '1', content: 'Met at TechConf 2024. Interested in our enterprise plan.', user: 'Admin', date: '5 days ago' },
-    { id: '2', content: 'Sent the initial proposal. Expecting feedback by Friday.', user: 'Admin', date: '2 days ago' },
-  ],
-  activities: [
-    { id: '1', type: 'STATUS_CHANGE', description: 'Moved from Contacted to Qualified', date: '2 days ago' },
-    { id: '2', type: 'NOTE_ADDED', description: 'Added a new interaction note', date: '2 days ago' },
-    { id: '3', type: 'LEAD_CREATED', description: 'Lead was created via LinkedIn import', date: '7 days ago' },
-  ]
-}
 
 import { toast } from 'sonner'
 import { EditLeadDialog } from '@/components/leads/EditLeadDialog'
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
+  DropdownMenuGroup,
   DropdownMenuItem, 
   DropdownMenuLabel, 
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu'
 
-export default function LeadDetailsPage() {
-  const [noteHeader, setNoteHeader] = useState('')
+export default function LeadDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+  const [lead, setLead] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [noteContent, setNoteContent] = useState('')
+  const [isSubmittingNote, setIsSubmittingNote] = useState(false)
+
+  const unwrappedParams = use(params)
+  const leadId = unwrappedParams.id
+
+  const fetchLeadDetails = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const res = await fetch(`/api/leads/${leadId}`)
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setLead(data)
+    } catch (error) {
+      toast.error('Failed to load lead details')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [leadId])
+
+  useEffect(() => {
+    fetchLeadDetails()
+  }, [fetchLeadDetails])
+
+  const handleAddNote = async () => {
+    if (!noteContent.trim()) return
+    setIsSubmittingNote(true)
+    try {
+      const res = await fetch(`/api/leads/${leadId}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: noteContent }),
+      })
+      if (!res.ok) throw new Error()
+      toast.success('Note added')
+      setNoteContent('')
+      fetchLeadDetails()
+    } catch (error) {
+      toast.error('Failed to add note')
+    } finally {
+      setIsSubmittingNote(false)
+    }
+  }
+
+  const formatSafeDate = (dateStr: string) => {
+    if (!dateStr) return 'Unknown date'
+    try {
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) return dateStr
+      return format(date, 'MMM dd, yyyy HH:mm')
+    } catch (e) {
+      return dateStr
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    )
+  }
+
+  if (!lead) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <h2 className="text-2xl font-bold">Lead Not Found</h2>
+        <Link href="/dashboard/leads">
+          <Button variant="outline" className="rounded-xl">Go Back to Leads</Button>
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8 pb-10">
@@ -74,12 +126,13 @@ export default function LeadDetailsPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{mockLead.name}</h1>
-          <p className="text-slate-500">{mockLead.company} • Lead Details</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{lead.name}</h1>
+          <p className="text-slate-500">{lead.company} • Lead Details</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <EditLeadDialog 
-            lead={mockLead} 
+            lead={lead} 
+            onLeadUpdated={fetchLeadDetails}
             trigger={
               <Button variant="outline" className="rounded-xl">
                  <Edit className="w-4 h-4 mr-2" />
@@ -94,16 +147,18 @@ export default function LeadDetailsPage() {
               </Button>
             } />
             <DropdownMenuContent align="end" className="rounded-xl w-48">
-              <DropdownMenuLabel>Communicate</DropdownMenuLabel>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Communicate</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => toast.success("Opening email composer...")}>
+                  <Mail className="w-4 h-4 mr-2" /> Send Email
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => toast.success("Dialing lead...")}>
+                  <Phone className="w-4 h-4 mr-2" /> Start Call
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => toast.success("Opening email composer...")}>
-                <Mail className="w-4 h-4 mr-2" /> Send Email
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => toast.success("Dialing lead...")}>
-                <Phone className="w-4 h-4 mr-2" /> Start Call
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => toast.info("Activity logged")}>
+              <DropdownMenuItem onSelect={() => toast.info("Activity logged")}>
                 Log Interaction
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -120,15 +175,15 @@ export default function LeadDetailsPage() {
               <div className="flex justify-between items-start mb-6">
                 <div>
                    <p className="text-blue-100/80 text-sm font-medium uppercase tracking-wider">Health Score</p>
-                   <h3 className="text-4xl font-bold mt-1">{mockLead.healthScore}%</h3>
+                   <h3 className="text-4xl font-bold mt-1">{(lead.healthScore || 50)}%</h3>
                 </div>
                 <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md">
                    <Heart className="w-6 h-6 fill-white" />
                 </div>
               </div>
-              <Progress value={mockLead.healthScore} className="h-2 bg-white/20" />
+              <Progress value={lead.healthScore || 50} className="h-2 bg-white/20" />
               <p className="mt-6 text-sm text-blue-100 leading-relaxed">
-                This lead has shown high engagement. Likely to convert within 30 days.
+                Lead engagement score based on recent interactions.
               </p>
             </CardContent>
           </Card>
@@ -145,7 +200,7 @@ export default function LeadDetailsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Email Address</p>
-                    <p className="text-sm font-medium">{mockLead.email}</p>
+                    <p className="text-sm font-medium">{lead.email}</p>
                   </div>
                </div>
                <div className="flex items-center gap-4">
@@ -154,7 +209,7 @@ export default function LeadDetailsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Phone Number</p>
-                    <p className="text-sm font-medium">{mockLead.phone}</p>
+                    <p className="text-sm font-medium">{lead.phone}</p>
                   </div>
                </div>
                <div className="flex items-center gap-4">
@@ -163,18 +218,18 @@ export default function LeadDetailsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-slate-400">Company</p>
-                    <p className="text-sm font-medium">{mockLead.company}</p>
+                    <p className="text-sm font-medium">{lead.company}</p>
                   </div>
                </div>
                <div className="pt-4 border-t border-slate-50">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-xs text-slate-400 mb-1">Status</p>
-                      <Badge className="bg-blue-50 text-blue-600 border-none rounded-lg">{mockLead.status}</Badge>
+                      <Badge className="bg-blue-50 text-blue-600 border-none rounded-lg">{lead.status}</Badge>
                     </div>
                     <div>
                       <p className="text-xs text-slate-400 mb-1">Priority</p>
-                      <Badge className="bg-rose-50 text-rose-600 border-none rounded-lg">{mockLead.priority}</Badge>
+                      <Badge className="bg-rose-50 text-rose-600 border-none rounded-lg">{lead.priority || 'MEDIUM'}</Badge>
                     </div>
                   </div>
                </div>
@@ -205,15 +260,18 @@ export default function LeadDetailsPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-8 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-100 dark:before:bg-slate-800">
-                      {mockLead.activities.map((activity, i) => (
+                      {(lead.activities || []).map((activity: any) => (
                         <div key={activity.id} className="relative flex gap-6 pl-2">
                            <div className="w-6 h-6 rounded-full bg-white dark:bg-slate-900 border-4 border-blue-500 absolute left-[-1px] z-10 shadow-sm" />
                            <div className="flex-1">
                               <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{activity.description}</p>
-                              <p className="text-xs text-slate-400 mt-1">{activity.date}</p>
+                              <p className="text-xs text-slate-400 mt-1">{formatSafeDate(activity.createdAt)}</p>
                            </div>
                         </div>
                       ))}
+                      {(lead.activities || []).length === 0 && (
+                        <p className="text-sm text-slate-400 pl-8">No recent activities recorded.</p>
+                      )}
                     </div>
                   </CardContent>
                </Card>
@@ -223,26 +281,34 @@ export default function LeadDetailsPage() {
                <div className="relative">
                   <Input 
                     placeholder="Add a private note for this lead..." 
+                    value={noteContent}
+                    onChange={(e) => setNoteContent(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddNote()}
                     className="h-14 pl-12 pr-12 rounded-2xl bg-white border-slate-200 shadow-sm shadow-slate-100/50 focus-visible:ring-blue-500"
                   />
                   <MessageSquare className="absolute left-4 top-5 h-4 w-4 text-slate-400" />
-                  <Button size="icon" className="absolute right-2 top-2 h-10 w-10 bg-blue-600 rounded-xl">
+                  <Button 
+                    size="icon" 
+                    className="absolute right-2 top-2 h-10 w-10 bg-blue-600 rounded-xl"
+                    onClick={handleAddNote}
+                    disabled={isSubmittingNote}
+                  >
                     <Send className="h-4 w-4" />
                   </Button>
                </div>
 
                <div className="space-y-4">
-                  {mockLead.notes.map((note) => (
+                  {(lead.notes || []).map((note: any) => (
                     <Card key={note.id} className="border-none shadow-sm shadow-slate-100 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden">
                        <CardContent className="p-5">
                           <div className="flex justify-between items-start mb-3">
                              <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold uppercase border-2 border-white shadow-sm">
-                                   {note.user.slice(0, 2)}
+                                   {note.createdBy?.name?.slice(0, 2) || 'U'}
                                 </div>
                                 <div className="flex flex-col">
-                                   <span className="text-sm font-bold text-slate-900">{note.user}</span>
-                                   <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">{note.date}</span>
+                                   <span className="text-sm font-bold text-slate-900">{note.createdBy?.name || 'Unknown'}</span>
+                                   <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">{formatSafeDate(note.createdAt)}</span>
                                 </div>
                              </div>
                           </div>

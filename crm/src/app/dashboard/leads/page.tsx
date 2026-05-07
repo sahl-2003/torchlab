@@ -29,6 +29,7 @@ import {
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
+  DropdownMenuGroup,
   DropdownMenuItem, 
   DropdownMenuLabel, 
   DropdownMenuSeparator, 
@@ -60,9 +61,11 @@ const priorityColors: any = {
 
 import { CreateLeadDialog } from '@/components/leads/CreateLeadDialog'
 import { EditLeadDialog } from '@/components/leads/EditLeadDialog'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function LeadsPage() {
+  const router = useRouter()
   // ... existing states ...
   const [leads, setLeads] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -253,11 +256,11 @@ export default function LeadsPage() {
                         {lead.status.replace('_', ' ')}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="rounded-full px-3 border-none bg-slate-100 text-slate-100 dark:bg-slate-800 dark:text-slate-400">
-                        {lead.source || 'MANUAL'}
-                      </Badge>
-                    </TableCell>
+                     <TableCell>
+                       <Badge variant="outline" className="rounded-full px-3 border-none bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                         {(lead.source || 'MANUAL').toLowerCase().replace(/^\w/, (c: string) => c.toUpperCase())}
+                       </Badge>
+                     </TableCell>
                     <TableCell>
                       <span className="text-sm text-slate-600 dark:text-slate-400">{lead.salesperson?.name || 'Unassigned'}</span>
                     </TableCell>
@@ -278,14 +281,14 @@ export default function LeadsPage() {
                           </Button>
                         } />
                         <DropdownMenuContent align="end" className="rounded-xl w-40">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem render={
-                            <Link href={`/dashboard/leads/${lead.id}`}>
+                          <DropdownMenuGroup>
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => lead.id && router.push(`/dashboard/leads/${lead.id}`)}>
                               <Eye className="w-4 h-4 mr-2" /> View Details
-                            </Link>
-                          } />
-                          <EditLeadDialog lead={lead} onLeadUpdated={fetchLeads} />
+                            </DropdownMenuItem>
+                            <EditLeadDialog lead={lead} onLeadUpdated={fetchLeads} />
+                          </DropdownMenuGroup>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-rose-600" onClick={() => handleDeleteLead(lead.id)}>
                             <Trash2 className="w-4 h-4 mr-2" /> Delete

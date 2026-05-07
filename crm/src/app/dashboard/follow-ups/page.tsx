@@ -71,11 +71,16 @@ export default function FollowUpsPage() {
                            <Button variant="ghost" size="icon" className="rounded-full hover:bg-emerald-50 hover:text-emerald-600">
                               <Check className="w-5 h-5" />
                            </Button>
-                           <Button variant="ghost" size="icon" className="rounded-full" asChild>
-                             <Link href="/dashboard/leads/1">
-                               <ExternalLink className="w-4 h-4" />
-                             </Link>
-                           </Button>
+                           <Button 
+                             variant="ghost" 
+                             size="icon" 
+                             className="rounded-full"
+                             render={
+                               <Link href="/dashboard/leads/1">
+                                 <ExternalLink className="w-4 h-4" />
+                               </Link>
+                             }
+                           />
                         </div>
                       </div>
                     </CardContent>

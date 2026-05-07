@@ -20,6 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
+  DropdownMenuGroup,
   DropdownMenuItem, 
   DropdownMenuLabel, 
   DropdownMenuSeparator, 
@@ -131,14 +132,16 @@ export default function DealsPage() {
                               </Button>
                             } />
                             <DropdownMenuContent align="end" className="rounded-xl w-40">
-                              <DropdownMenuLabel>Deal Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => toast.success("Opening deal workshop...")}>
-                                Edit Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toast.info("Stage updated successfully")}>
-                                Change Stage
-                              </DropdownMenuItem>
+                              <DropdownMenuGroup>
+                                <DropdownMenuLabel>Deal Actions</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => toast.success("Opening deal workshop...")}>
+                                  Edit Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => toast.info("Stage updated successfully")}>
+                                  Change Stage
+                                </DropdownMenuItem>
+                              </DropdownMenuGroup>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem className="text-rose-600" onClick={() => toast.error("Deals cannot be deleted in demo mode")}>
                                 Archive Deal
