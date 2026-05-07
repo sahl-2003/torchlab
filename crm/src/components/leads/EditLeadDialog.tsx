@@ -26,20 +26,31 @@ interface EditLeadDialogProps {
   lead: any
   onLeadUpdated?: () => void
   trigger?: React.ReactNode
+  externalOpen?: boolean
+  onExternalClose?: () => void
 }
 
-export function EditLeadDialog({ lead, onLeadUpdated, trigger }: EditLeadDialogProps) {
+export function EditLeadDialog({ lead, onLeadUpdated, trigger, externalOpen, onExternalClose }: EditLeadDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [users, setUsers] = useState<any[]>([])
 
+  const isOpen = externalOpen !== undefined ? externalOpen : open
+  const handleOpenChange = (val: boolean) => {
+    if (externalOpen !== undefined) {
+      if (!val && onExternalClose) onExternalClose()
+    } else {
+      setOpen(val)
+    }
+  }
+
   React.useEffect(() => {
-    if (open) {
+    if (isOpen) {
       fetch('/api/users')
         .then(res => res.json())
         .then(data => setUsers(data))
     }
-  }, [open])
+  }, [isOpen])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -68,7 +79,7 @@ export function EditLeadDialog({ lead, onLeadUpdated, trigger }: EditLeadDialogP
       if (!res.ok) throw new Error('Failed to update lead')
 
       toast.success('Lead updated successfully')
-      setOpen(false)
+      handleOpenChange(false)
       if (onLeadUpdated) onLeadUpdated()
     } catch (error) {
       toast.error('Could not update lead')
@@ -78,17 +89,19 @@ export function EditLeadDialog({ lead, onLeadUpdated, trigger }: EditLeadDialogP
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger 
-        render={
-          (trigger as React.ReactElement) || (
-            <Button variant="ghost" className="w-full justify-start">
-              <Edit className="w-4 h-4 mr-2" />
-              Edit Lead
-            </Button>
-          )
-        }
-      />
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      {externalOpen === undefined && (
+        <DialogTrigger 
+          render={
+            (trigger as React.ReactElement) || (
+              <Button variant="ghost" className="w-full justify-start">
+                <Edit className="w-4 h-4 mr-2" />
+                Edit Lead
+              </Button>
+            )
+          }
+        />
+      )}
       <DialogContent className="sm:max-w-[425px] rounded-3xl p-8">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Edit Lead</DialogTitle>

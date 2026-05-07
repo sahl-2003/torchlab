@@ -45,6 +45,11 @@ export default function LeadDetailsPage({ params }: { params: Promise<{ id: stri
   const [isLoading, setIsLoading] = useState(true)
   const [noteContent, setNoteContent] = useState('')
   const [isSubmittingNote, setIsSubmittingNote] = useState(false)
+  const [followUps, setFollowUps] = useState<any[]>([])
+  const [followUpTitle, setFollowUpTitle] = useState('')
+  const [followUpDate, setFollowUpDate] = useState('')
+  const [isSubmittingFollowUp, setIsSubmittingFollowUp] = useState(false)
+  const [showFollowUpForm, setShowFollowUpForm] = useState(false)
 
   const unwrappedParams = use(params)
   const leadId = unwrappedParams.id
@@ -70,9 +75,60 @@ export default function LeadDetailsPage({ params }: { params: Promise<{ id: stri
     }
   }, [leadId])
 
+  const fetchFollowUps = useCallback(async () => {
+    try {
+      const res = await fetch('/api/follow-ups')
+      if (!res.ok) return
+      const data = await res.json()
+      // Filter to only this lead's follow-ups
+      setFollowUps(data.filter((f: any) => f.leadId === leadId))
+    } catch (error) {
+      // silently fail
+    }
+  }, [leadId])
+
+  const handleCreateFollowUp = async () => {
+    if (!followUpTitle.trim() || !followUpDate) return
+    setIsSubmittingFollowUp(true)
+    try {
+      const res = await fetch('/api/follow-ups', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: followUpTitle, date: followUpDate, leadId }),
+      })
+      if (!res.ok) throw new Error()
+      toast.success('Follow-up created')
+      setFollowUpTitle('')
+      setFollowUpDate('')
+      setShowFollowUpForm(false)
+      fetchFollowUps()
+      fetchLeadDetails()
+    } catch (error) {
+      toast.error('Failed to create follow-up')
+    } finally {
+      setIsSubmittingFollowUp(false)
+    }
+  }
+
+  const handleToggleFollowUp = async (id: string, completed: boolean) => {
+    try {
+      const res = await fetch('/api/follow-ups', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, completed: !completed }),
+      })
+      if (!res.ok) throw new Error()
+      toast.success(completed ? 'Marked as pending' : 'Marked as completed')
+      fetchFollowUps()
+    } catch (error) {
+      toast.error('Failed to update follow-up')
+    }
+  }
+
   useEffect(() => {
     fetchLeadDetails()
-  }, [fetchLeadDetails])
+    fetchFollowUps()
+  }, [fetchLeadDetails, fetchFollowUps])
 
   const handleAddNote = async () => {
     if (!noteContent.trim()) return
@@ -328,30 +384,99 @@ export default function LeadDetailsPage({ params }: { params: Promise<{ id: stri
                </div>
             </TabsContent>
 
-            <TabsContent value="followups" className="mt-0">
+            <TabsContent value="followups" className="mt-0 space-y-6">
+               {showFollowUpForm && (
+                 <Card className="border-none shadow-sm shadow-slate-200 rounded-3xl overflow-hidden">
+                   <CardContent className="p-6 space-y-4">
+                     <h4 className="font-bold text-slate-900">Create Follow-up</h4>
+                     <div className="space-y-3">
+                       <Input
+                         placeholder="Follow-up title, e.g. 'Call to discuss proposal'"
+                         value={followUpTitle}
+                         onChange={(e) => setFollowUpTitle(e.target.value)}
+                         className="rounded-xl h-11 border-slate-200"
+                       />
+                       <Input
+                         type="datetime-local"
+                         value={followUpDate}
+                         onChange={(e) => setFollowUpDate(e.target.value)}
+                         className="rounded-xl h-11 border-slate-200"
+                       />
+                     </div>
+                     <div className="flex gap-2">
+                       <Button
+                         className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-10 font-semibold"
+                         onClick={handleCreateFollowUp}
+                         disabled={isSubmittingFollowUp || !followUpTitle.trim() || !followUpDate}
+                       >
+                         {isSubmittingFollowUp ? 'Creating...' : 'Create Follow-up'}
+                       </Button>
+                       <Button
+                         variant="outline"
+                         className="rounded-xl h-10"
+                         onClick={() => { setShowFollowUpForm(false); setFollowUpTitle(''); setFollowUpDate('') }}
+                       >
+                         Cancel
+                       </Button>
+                     </div>
+                   </CardContent>
+                 </Card>
+               )}
                <Card className="border-none shadow-sm shadow-slate-200 rounded-3xl overflow-hidden">
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                       <CardTitle className="text-xl">Next Follow-ups</CardTitle>
                       <CardDescription>Scheduled tasks and reminders</CardDescription>
                     </div>
-                    <Button className="rounded-xl h-9 bg-slate-900">
+                    <Button className="rounded-xl h-9 bg-slate-900" onClick={() => setShowFollowUpForm(true)}>
                        <Plus className="w-4 h-4 mr-2" /> New Task
                     </Button>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                    {followUps.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center p-12 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
                         <Calendar className="w-10 h-10 text-slate-300 mb-4" />
                         <h4 className="font-bold text-slate-900">No follow-ups scheduled</h4>
                         <p className="text-sm text-slate-500 max-w-xs mt-1">Schedule a follow-up to ensure you don't lose track of this lead.</p>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           className="mt-6 rounded-xl"
-                          onClick={() => toast.success("Follow-up reminder set for next Tuesday.")}
+                          onClick={() => setShowFollowUpForm(true)}
                         >
                           Set Reminder
                         </Button>
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {followUps.map((fu: any) => (
+                          <div key={fu.id} className={`flex items-center gap-4 p-4 rounded-2xl border transition-colors ${
+                            fu.completed ? 'bg-emerald-50/50 border-emerald-100' : 'bg-white border-slate-100 hover:border-blue-200'
+                          }`}>
+                            <button
+                              onClick={() => handleToggleFollowUp(fu.id, fu.completed)}
+                              className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                fu.completed ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 hover:border-blue-500'
+                              }`}
+                            >
+                              {fu.completed && <span className="text-xs">✓</span>}
+                            </button>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm font-bold ${fu.completed ? 'line-through text-slate-400' : 'text-slate-900'}`}>
+                                {fu.title}
+                              </p>
+                              <p className="text-xs text-slate-400 mt-0.5">
+                                {formatSafeDate(fu.date)}
+                              </p>
+                            </div>
+                            <Badge className={`rounded-full text-xs px-2 border-none ${
+                              fu.completed ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'
+                            }`}>
+                              {fu.completed ? 'Done' : 'Pending'}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                </Card>
             </TabsContent>

@@ -62,3 +62,46 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function POST(request: Request) {
+  const session = await getSession()
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  try {
+    const { title, date, leadId } = await request.json()
+
+    if (!title || !date || !leadId) {
+      return NextResponse.json({ error: 'Title, date, and leadId are required' }, { status: 400 })
+    }
+
+    const followUp = await prisma.followUp.create({
+      data: {
+        title,
+        date: new Date(date),
+        leadId,
+      },
+      include: {
+        lead: {
+          select: { name: true, company: true, status: true }
+        }
+      }
+    })
+
+    // Log activity
+    await prisma.activity.create({
+      data: {
+        type: 'FOLLOW_UP_CREATED',
+        description: `Follow-up "${title}" scheduled`,
+        leadId,
+        userId: session.userId,
+      }
+    })
+
+    return NextResponse.json(followUp)
+  } catch (error) {
+    console.error('Error creating follow-up:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

@@ -73,6 +73,7 @@ export default function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState('ALL')
   const [sourceFilter, setSourceFilter] = useState('ALL')
   const [users, setUsers] = useState<any[]>([])
+  const [editingLead, setEditingLead] = useState<any>(null)
 
   useEffect(() => {
     fetch('/api/users').then(res => res.json()).then(setUsers)
@@ -287,7 +288,9 @@ export default function LeadsPage() {
                             <DropdownMenuItem onClick={() => lead.id && router.push(`/dashboard/leads/${lead.id}`)}>
                               <Eye className="w-4 h-4 mr-2" /> View Details
                             </DropdownMenuItem>
-                            <EditLeadDialog lead={lead} onLeadUpdated={fetchLeads} />
+                            <DropdownMenuItem onClick={() => setEditingLead(lead)}>
+                              <Edit className="w-4 h-4 mr-2" /> Edit Lead
+                            </DropdownMenuItem>
                           </DropdownMenuGroup>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-rose-600" onClick={() => handleDeleteLead(lead.id)}>
@@ -321,6 +324,15 @@ export default function LeadsPage() {
           )}
         </CardContent>
       </Card>
+
+      {editingLead && (
+        <EditLeadDialog
+          lead={editingLead}
+          onLeadUpdated={() => { fetchLeads(); setEditingLead(null) }}
+          externalOpen={true}
+          onExternalClose={() => setEditingLead(null)}
+        />
+      )}
     </motion.div>
   )
 }
