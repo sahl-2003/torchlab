@@ -13,15 +13,16 @@ async function getUserId() {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const userId = await getUserId()
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const data = await request.json()
     const lead = await prisma.lead.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...data,
       },
@@ -31,7 +32,7 @@ export async function PATCH(
     await prisma.activity.create({
       data: {
         type: 'LEAD_UPDATED',
-        description: `Updated lead details for ${lead.name}`,
+        description: `Updated lead status to ${lead.status}`,
         leadId: lead.id,
         userId,
       }
@@ -39,20 +40,22 @@ export async function PATCH(
 
     return NextResponse.json(lead)
   } catch (error) {
+    console.error('PATCH ERROR:', error)
     return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 })
   }
 }
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const userId = await getUserId()
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     await prisma.lead.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({ message: 'Lead deleted' })
@@ -63,11 +66,12 @@ export async function DELETE(
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const lead = await prisma.lead.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         notes: { orderBy: { createdAt: 'desc' } },
         activities: { orderBy: { createdAt: 'desc' } },
