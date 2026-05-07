@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Clock, 
@@ -17,14 +17,107 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Link from 'next/link'
-
-const followUps = [
-  { id: '1', title: 'Call Sarah Chen', lead: 'Sarah Chen', company: 'Nexus', date: 'Upcoming: Today, 2:00 PM', type: 'UPCOMING', priority: 'HIGH' },
-  { id: '2', title: 'Send proposal to James', lead: 'James Wilson', company: 'Global Log', date: 'Overdue: Yesterday', type: 'OVERDUE', priority: 'URGENT' },
-  { id: '3', title: 'Email follow-up: Elena', lead: 'Elena Rodriguez', company: 'CloudScale', date: 'Upcoming: Tomorrow', type: 'UPCOMING', priority: 'MEDIUM' },
-]
+import { toast } from 'sonner'
 
 export default function FollowUpsPage() {
+  const [tasks, setTasks] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  const fetchFollowUps = async () => {
+    try {
+      const res = await fetch('/api/follow-ups')
+      const data = await res.json()
+      setTasks(data)
+    } catch (err) {
+      toast.error("Failed to load follow-ups")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchFollowUps()
+  }, [])
+
+  const handleToggleComplete = async (id: string, currentStatus: boolean) => {
+    try {
+      const res = await fetch('/api/follow-ups', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, completed: !currentStatus })
+      })
+      if (res.ok) {
+        toast.success(currentStatus ? "Task reopened" : "Task completed!")
+        fetchFollowUps()
+      }
+    } catch (err) {
+      toast.error("Failed to update task")
+    }
+  }
+
+  const overdueTasks = tasks.filter(t => !t.completed && new Date(t.date) < new Date())
+  const upcomingTasks = tasks.filter(t => !t.completed && new Date(t.date) >= new Date())
+  const completedTasks = tasks.filter(t => t.completed)
+
+  const renderTask = (task: any) => {
+    const isOverdue = !task.completed && new Date(task.date) < new Date()
+    return (
+      <motion.div
+        key={task.id}
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+      >
+        <Card className="border-none shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-6">
+              <div className={`p-3 rounded-2xl ${task.completed ? 'bg-emerald-50 text-emerald-600' : isOverdue ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>
+                {task.completed ? <CheckCircle2 className="w-6 h-6" /> : isOverdue ? <AlertCircle className="w-6 h-6" /> : <Bell className="w-6 h-6" />}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className={`font-bold text-slate-900 dark:text-white ${task.completed ? 'line-through text-slate-400' : ''}`}>{task.title}</h4>
+                  <Badge className="bg-slate-100 text-slate-600 border-none">
+                    {isOverdue ? 'OVERDUE' : 'UPCOMING'}
+                  </Badge>
+                </div>
+                <p className="text-sm text-slate-500">{task.lead?.name || 'Unknown Lead'} • {task.lead?.company || 'No Company'}</p>
+                <div className="flex items-center gap-2 mt-3 text-xs font-medium">
+                  <Calendar className="w-3 h-3 text-slate-400" />
+                  <span className={isOverdue && !task.completed ? 'text-rose-600' : 'text-slate-400'}>
+                    {new Date(task.date).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                 <Button 
+                   variant="ghost" 
+                   size="icon" 
+                   className={`rounded-full ${task.completed ? 'text-emerald-600 bg-emerald-50' : 'hover:bg-emerald-50 hover:text-emerald-600'}`}
+                   onClick={() => handleToggleComplete(task.id, task.completed)}
+                 >
+                    <Check className="w-5 h-5" />
+                 </Button>
+                 <Button 
+                   variant="ghost" 
+                   size="icon" 
+                   className="rounded-full"
+                   render={
+                     <Link href={`/dashboard/leads/${task.leadId}`}>
+                       <ExternalLink className="w-4 h-4" />
+                     </Link>
+                   }
+                 />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    )
+  }
+
+  if (isLoading) {
+    return <div className="p-8 text-center animate-pulse">Loading reminders...</div>
+  }
   return (
     <div className="space-y-8 pb-10">
       <div>
@@ -42,51 +135,15 @@ export default function FollowUpsPage() {
             </TabsList>
 
             <TabsContent value="all" className="mt-6 space-y-4">
-              {followUps.map((task) => (
-                <motion.div
-                  key={task.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                >
-                  <Card className="border-none shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden bg-white dark:bg-slate-900">
-                    <CardContent className="p-6">
-                      <div className="flex items-center gap-6">
-                        <div className={`p-3 rounded-2xl ${task.type === 'OVERDUE' ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>
-                          {task.type === 'OVERDUE' ? <AlertCircle className="w-6 h-6" /> : <Bell className="w-6 h-6" />}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-bold text-slate-900 dark:text-white">{task.title}</h4>
-                            <Badge className={task.priority === 'URGENT' ? 'bg-red-600 text-white' : 'bg-slate-100 text-slate-600 border-none'}>
-                              {task.priority}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-slate-500">{task.lead} • {task.company}</p>
-                          <div className="flex items-center gap-2 mt-3 text-xs font-medium">
-                            <Calendar className="w-3 h-3 text-slate-400" />
-                            <span className={task.type === 'OVERDUE' ? 'text-rose-600' : 'text-slate-400'}>{task.date}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                           <Button variant="ghost" size="icon" className="rounded-full hover:bg-emerald-50 hover:text-emerald-600">
-                              <Check className="w-5 h-5" />
-                           </Button>
-                           <Button 
-                             variant="ghost" 
-                             size="icon" 
-                             className="rounded-full"
-                             render={
-                               <Link href="/dashboard/leads/1">
-                                 <ExternalLink className="w-4 h-4" />
-                               </Link>
-                             }
-                           />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+              {tasks.length === 0 ? <p className="p-8 text-center text-slate-400">No tasks found.</p> : tasks.map(renderTask)}
+            </TabsContent>
+            
+            <TabsContent value="overdue" className="mt-6 space-y-4">
+              {overdueTasks.length === 0 ? <p className="p-8 text-center text-slate-400">No overdue tasks.</p> : overdueTasks.map(renderTask)}
+            </TabsContent>
+
+            <TabsContent value="upcoming" className="mt-6 space-y-4">
+              {upcomingTasks.length === 0 ? <p className="p-8 text-center text-slate-400">No upcoming tasks.</p> : upcomingTasks.map(renderTask)}
             </TabsContent>
           </Tabs>
         </div>
@@ -95,11 +152,13 @@ export default function FollowUpsPage() {
           <Card className="border-none shadow-sm rounded-3xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-100">
             <CardHeader>
               <CardTitle className="text-xl">Productivity Stats</CardTitle>
-              <CardDescription>How you're doing this week</CardDescription>
+              <CardDescription>Overall performance</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                <div className="text-center p-6 bg-slate-50 rounded-2xl border border-slate-100">
-                  <p className="text-3xl font-black text-blue-600">92%</p>
+                  <p className="text-3xl font-black text-blue-600">
+                    {tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0}%
+                  </p>
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Completion Rate</p>
                </div>
                <div className="space-y-4">
@@ -108,14 +167,14 @@ export default function FollowUpsPage() {
                       <div className="w-2 h-2 rounded-full bg-emerald-500" />
                       <span className="text-slate-500">Tasks Completed</span>
                     </div>
-                    <span className="font-bold">24</span>
+                    <span className="font-bold">{completedTasks.length}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-rose-500" />
                       <span className="text-slate-500">Tasks Overdue</span>
                     </div>
-                    <span className="font-bold">2</span>
+                    <span className="font-bold">{overdueTasks.length}</span>
                   </div>
                </div>
             </CardContent>

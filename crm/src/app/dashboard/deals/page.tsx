@@ -28,16 +28,32 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 
-const deals = [
-  { id: '1', title: 'Enterprise Software License', client: 'Nexus Dynamics', value: 45000, stage: 'Final Negotiation', probability: '90%', expectedClose: 'May 24, 2024' },
-  { id: '2', title: 'Consulting Services Q3', client: 'CloudScale Inc', value: 12500, stage: 'Proposal Sent', probability: '60%', expectedClose: 'Jun 12, 2024' },
-  { id: '3', title: 'System Migration Project', client: 'Global Logistics', value: 82000, stage: 'Discovery', probability: '20%', expectedClose: 'Aug 05, 2024' },
-  { id: '4', title: 'Subscription Renewal', client: 'AeroTech Systems', value: 5400, stage: 'Won', probability: '100%', expectedClose: 'May 01, 2024' },
-]
-
+import { useState, useEffect } from 'react'
 import { CreateDealDialog } from '@/components/deals/CreateDealDialog'
 
 export default function DealsPage() {
+  const [data, setData] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    fetch('/api/deals')
+      .then(res => res.json())
+      .then(json => {
+        setData(json)
+        setIsLoading(false)
+      })
+      .catch(err => {
+        toast.error("Failed to load deals")
+        setIsLoading(false)
+      })
+  }, [])
+
+  if (isLoading) {
+    return <div className="p-8 text-center animate-pulse">Loading deals and metrics...</div>
+  }
+
+  const deals = data?.deals || []
+  const metrics = data?.metrics || {}
   return (
     <div className="space-y-8 pb-10">
       <div className="flex items-center justify-between">
@@ -52,30 +68,30 @@ export default function DealsPage() {
         <Card className="border-none shadow-sm rounded-2xl bg-blue-600 text-white">
            <CardContent className="p-6">
               <p className="text-blue-100 text-sm font-medium uppercase tracking-wider">Pipeline Value</p>
-              <h3 className="text-3xl font-black mt-2">$248,500</h3>
+              <h3 className="text-3xl font-black mt-2">${(metrics.pipelineValue || 0).toLocaleString()}</h3>
               <div className="mt-4 flex items-center gap-2 text-blue-100 text-sm">
                  <ArrowUpRight className="w-4 h-4" />
-                 <span>12% from last month</span>
+                 <span>{metrics.pipelineTrend}</span>
               </div>
            </CardContent>
         </Card>
         <Card className="border-none shadow-sm rounded-2xl bg-slate-900 text-white">
            <CardContent className="p-6">
               <p className="text-slate-400 text-sm font-medium uppercase tracking-wider">Forecasted Revenue</p>
-              <h3 className="text-3xl font-black mt-2">$182,200</h3>
+              <h3 className="text-3xl font-black mt-2">${(metrics.forecastedRevenue || 0).toLocaleString()}</h3>
               <div className="mt-4 flex items-center gap-2 text-slate-400 text-sm">
                  <Briefcase className="w-4 h-4" />
-                 <span>Based on probability</span>
+                 <span>{metrics.forecastTrend}</span>
               </div>
            </CardContent>
         </Card>
         <Card className="border-none shadow-sm rounded-2xl bg-emerald-600 text-white">
            <CardContent className="p-6">
               <p className="text-emerald-100 text-sm font-medium uppercase tracking-wider">Won This Month</p>
-              <h3 className="text-3xl font-black mt-2">$34,400</h3>
+              <h3 className="text-3xl font-black mt-2">${(metrics.wonThisMonthValue || 0).toLocaleString()}</h3>
               <div className="mt-4 flex items-center gap-2 text-emerald-100 text-sm">
                  <BadgeCheck className="w-4 h-4" />
-                 <span>8 Deals Closed</span>
+                 <span>{metrics.wonTrend}</span>
               </div>
            </CardContent>
         </Card>
@@ -100,9 +116,13 @@ export default function DealsPage() {
                  </TableRow>
               </TableHeader>
               <TableBody>
-                 {deals.map((deal) => (
-                    <TableRow key={deal.id} className="hover:bg-slate-50 transition-colors">
-                       <TableCell className="font-bold py-4">{deal.title}</TableCell>
+                 {deals.length === 0 ? (
+                   <TableRow>
+                     <TableCell colSpan={7} className="text-center py-10 text-slate-400">No active opportunities found.</TableCell>
+                   </TableRow>
+                 ) : deals.map((deal: any) => (
+                    <TableRow key={deal.id} className="hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border-slate-50 dark:border-slate-800">
+                       <TableCell className="font-bold py-4 text-slate-900 dark:text-white">{deal.title}</TableCell>
                        <TableCell>
                           <div className="flex items-center gap-2 text-slate-500">
                              <Building2 className="w-4 h-4" />
