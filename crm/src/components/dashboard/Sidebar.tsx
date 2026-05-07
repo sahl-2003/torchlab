@@ -97,17 +97,13 @@ export default function Sidebar() {
               </>
             )}
           </Button>
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start gap-3 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10"
-            render={
-              <Link href="/api/auth/logout">
-                <LogOut className="w-5 h-5" />
-                {!isCollapsed && <span>Sign Out</span>}
-              </Link>
-            }
-            nativeButton={false}
-          />
+          <a 
+            href="/api/auth/logout"
+            className="flex items-center w-full justify-start gap-3 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 px-3 py-3 transition-colors"
+          >
+            <LogOut className="w-5 h-5" />
+            {!isCollapsed && <span className="font-medium">Sign Out</span>}
+          </a>
         </div>
       </div>
     </aside>

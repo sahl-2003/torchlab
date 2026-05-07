@@ -43,8 +43,12 @@ export default function DashboardPage() {
 
   React.useEffect(() => {
     fetch('/api/dashboard')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch dashboard')
+        return res.json()
+      })
       .then(json => {
+        if (!json || !json.stats) throw new Error('Invalid dashboard data')
         setData(json)
         setIsLoading(false)
       })
@@ -56,6 +60,10 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return <div className="p-8 text-center animate-pulse">Initializing dashboard...</div>
+  }
+
+  if (!data || !data.stats) {
+    return <div className="p-8 text-center text-slate-500">No dashboard data available. Please try refreshing.</div>
   }
 
   const metrics = data.stats
