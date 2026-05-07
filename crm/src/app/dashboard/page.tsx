@@ -38,39 +38,37 @@ import { toast } from 'sonner'
 import { CreateLeadDialog } from '@/components/leads/CreateLeadDialog'
 
 export default function DashboardPage() {
-  const [metrics, setMetrics] = React.useState({
-    totalLeads: 0,
-    newLeads: 0,
-    qualifiedLeads: 0,
-    wonLeads: 0,
-    lostLeads: 0,
-    totalValue: 0,
-    wonValue: 0,
-  })
+  const [data, setData] = React.useState<any>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
 
   React.useEffect(() => {
-    fetch('/api/leads')
+    fetch('/api/dashboard')
       .then(res => res.json())
-      .then(leads => {
-        if (!Array.isArray(leads)) return
-        const stats = {
-          totalLeads: leads.length,
-          newLeads: leads.filter((l: any) => l.status === 'NEW').length,
-          qualifiedLeads: leads.filter((l: any) => l.status === 'QUALIFIED').length,
-          wonLeads: leads.filter((l: any) => l.status === 'WON').length,
-          lostLeads: leads.filter((l: any) => l.status === 'LOST').length,
-          totalValue: leads.reduce((acc: number, curr: any) => acc + (curr.estimatedValue || 0), 0),
-          wonValue: leads.filter((l: any) => l.status === 'WON').reduce((acc: number, curr: any) => acc + (curr.estimatedValue || 0), 0),
-        }
-        setMetrics(stats)
+      .then(json => {
+        setData(json)
+        setIsLoading(false)
+      })
+      .catch(err => {
+        toast.error("Failed to load dashboard data")
+        setIsLoading(false)
       })
   }, [])
+
+  if (isLoading) {
+    return <div className="p-8 text-center animate-pulse">Initializing dashboard...</div>
+  }
+
+  const metrics = data.stats
+  const chartData = data.chartData
+  const statusData = data.statusBreakdown
+  const recentActivities = data.recentActivities
+  const health = data.health
 
   const stats = [
     { 
       title: 'Total Leads', 
       value: metrics.totalLeads.toString(), 
-      change: '+4.5%', 
+      change: metrics.leadTrend, 
       trend: 'up', 
       icon: Users,
       color: 'text-blue-600',
@@ -79,7 +77,7 @@ export default function DashboardPage() {
     { 
       title: 'Won Value', 
       value: `$${metrics.wonValue.toLocaleString()}`, 
-      change: '+12.5%', 
+      change: metrics.wonValueTrend, 
       trend: 'up', 
       icon: DollarSign,
       color: 'text-emerald-600',
@@ -87,8 +85,8 @@ export default function DashboardPage() {
     },
     { 
       title: 'Total Pipeline', 
-      value: `$${metrics.totalValue.toLocaleString()}`, 
-      change: '+8.2%', 
+      value: `$${metrics.totalPipeline.toLocaleString()}`, 
+      change: metrics.pipelineTrend, 
       trend: 'up', 
       icon: Briefcase,
       color: 'text-indigo-600',
@@ -96,37 +94,13 @@ export default function DashboardPage() {
     },
     { 
       title: 'Won Deals', 
-      value: metrics.wonLeads.toString(), 
-      change: '+5.4%', 
+      value: metrics.wonDeals.toString(), 
+      change: metrics.wonDealsTrend, 
       trend: 'up', 
       icon: Target,
       color: 'text-purple-600',
       bg: 'bg-purple-50 dark:bg-purple-900/20'
     },
-  ]
-
-  const chartData = [
-    { name: 'Jan', revenue: 4000, leads: 240 },
-    { name: 'Feb', revenue: 3000, leads: 198 },
-    { name: 'Mar', revenue: 2000, leads: 980 },
-    { name: 'Apr', revenue: 2780, leads: 390 },
-    { name: 'May', revenue: 1890, leads: 480 },
-    { name: 'Jun', revenue: 2390, leads: 380 },
-    { name: 'Jul', revenue: 3490, leads: 430 },
-  ]
-
-  const statusData = [
-    { name: 'New', value: metrics.newLeads, color: '#3b82f6' },
-    { name: 'Qualified', value: metrics.qualifiedLeads, color: '#8b5cf6' },
-    { name: 'Won', value: metrics.wonLeads, color: '#10b981' },
-    { name: 'Lost', value: metrics.lostLeads, color: '#f43f5e' },
-  ]
-
-  const recentActivities = [
-    { id: 1, type: 'status', lead: 'Sarah Chen', action: 'moved to Qualified', time: '2 hours ago' },
-    { id: 2, type: 'note', lead: 'TechFlow Inc', action: 'added a new follow-up note', time: '4 hours ago' },
-    { id: 3, type: 'creation', lead: 'John Miller', action: 'was created as a new lead', time: '6 hours ago' },
-    { id: 4, type: 'status', lead: 'Global Logistics', action: 'marked as Won deal', time: 'yesterday' },
   ]
 
   return (
@@ -235,7 +209,7 @@ export default function DashboardPage() {
                     paddingAngle={5}
                     dataKey="value"
                   >
-                    {statusData.map((entry, index) => (
+                    {statusData.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
@@ -246,7 +220,7 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </div>
             <div className="space-y-4 mt-6">
-              {statusData.map((item) => (
+              {statusData.map((item: any) => (
                 <div key={item.name} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
@@ -269,7 +243,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {recentActivities.map((activity) => (
+              {recentActivities.map((activity: any) => (
                 <div key={activity.id} className="flex items-start gap-4">
                   <div className={cn(
                     "p-2 rounded-full mt-1",
@@ -306,7 +280,7 @@ export default function DashboardPage() {
           <CardContent className="space-y-8">
             <div className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-blue-100 dark:border-blue-900/30 rounded-3xl">
               <div className="relative">
-                 <div className="text-4xl font-black text-blue-600">84</div>
+                 <div className="text-4xl font-black text-blue-600">{health.score}</div>
                  <div className="text-xs font-bold text-center text-blue-400 uppercase tracking-widest mt-1">Score</div>
               </div>
             </div>
@@ -315,30 +289,30 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Contact Rate</span>
-                  <span className="font-bold text-slate-900">72%</span>
+                  <span className="font-bold text-slate-900">{health.contactRate}%</span>
                 </div>
-                <Progress value={72} className="h-1.5 bg-slate-100" />
+                <Progress value={health.contactRate} className="h-1.5 bg-slate-100" />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Follow-up Speed</span>
-                  <span className="font-bold text-slate-900">94%</span>
+                  <span className="font-bold text-slate-900">{health.followUpSpeed}%</span>
                 </div>
-                <Progress value={94} className="h-1.5 bg-slate-100" />
+                <Progress value={health.followUpSpeed} className="h-1.5 bg-slate-100" />
               </div>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-500">Conversion Quality</span>
-                  <span className="font-bold text-slate-900">65%</span>
+                  <span className="font-bold text-slate-900">{health.conversionQuality}%</span>
                 </div>
-                <Progress value={65} className="h-1.5 bg-slate-100" />
+                <Progress value={health.conversionQuality} className="h-1.5 bg-slate-100" />
               </div>
             </div>
 
             <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
                <p className="text-xs text-slate-500 leading-relaxed uppercase font-bold tracking-wider mb-2">Smart Insight</p>
                <p className="text-sm text-slate-900 dark:text-slate-300">
-                 Your conversion rate is 5% lower than last month. Focus on "Proposal Sent" leads.
+                 {health.insight}
                </p>
             </div>
           </CardContent>
