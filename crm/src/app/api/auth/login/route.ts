@@ -47,6 +47,8 @@ export async function POST(request: Request) {
       name: 'session',
       value: session,
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       expires,
       path: '/',
     })

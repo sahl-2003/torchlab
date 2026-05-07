@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { requireAuth, unauthorized } from '@/lib/auth'
 
 export async function GET() {
+  const session = await requireAuth()
+  if (!session) return unauthorized()
+
   try {
     const allLeads = await prisma.lead.findMany()
     const wonLeads = allLeads.filter(l => l.status === 'WON')

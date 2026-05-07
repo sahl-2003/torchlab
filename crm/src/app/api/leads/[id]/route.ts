@@ -1,15 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { decrypt } from '@/lib/auth'
-import { cookies } from 'next/headers'
-
-async function getUserId() {
-  const cookieStore = await cookies()
-  const session = cookieStore.get('session')?.value
-  if (!session) return null
-  const decoded = await decrypt(session)
-  return decoded.userId as string
-}
+import { requireAuth, unauthorized } from '@/lib/auth'
 
 export async function PATCH(
   request: Request,
@@ -17,15 +8,13 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const userId = await getUserId()
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await requireAuth()
+    if (!session) return unauthorized()
 
     const data = await request.json()
     const lead = await prisma.lead.update({
       where: { id },
-      data: {
-        ...data,
-      },
+      data: { ...data },
     })
 
     // Log activity
@@ -34,7 +23,7 @@ export async function PATCH(
         type: 'LEAD_UPDATED',
         description: `Updated lead status to ${lead.status}`,
         leadId: lead.id,
-        userId,
+        userId: session.userId,
       }
     })
 
@@ -51,8 +40,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    const userId = await getUserId()
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = await requireAuth()
+    if (!session) return unauthorized()
 
     await prisma.lead.delete({
       where: { id },
@@ -70,15 +59,18 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+    const session = await requireAuth()
+    if (!session) return unauthorized()
+
     const lead = await prisma.lead.findUnique({
       where: { id },
       include: {
-        notes: { 
+        notes: {
           include: { user: true },
-          orderBy: { createdAt: 'desc' } 
+          orderBy: { createdAt: 'desc' }
         },
-        activities: { 
-          orderBy: { createdAt: 'desc' } 
+        activities: {
+          orderBy: { createdAt: 'desc' }
         },
         salesperson: true
       }

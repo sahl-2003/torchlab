@@ -2,7 +2,12 @@ import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
-const secretKey = process.env.JWT_SECRET || 'secret'
+// Guard: crash immediately if JWT_SECRET is not set instead of falling back to "secret"
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not set. Server cannot start safely.')
+}
+
+const secretKey = process.env.JWT_SECRET
 const key = new TextEncoder().encode(secretKey)
 
 export async function encrypt(payload: any) {
@@ -23,22 +28,47 @@ export async function decrypt(input: string): Promise<any> {
 export async function getSession() {
   const session = (await cookies()).get('session')?.value
   if (!session) return null
-  return await decrypt(session)
+  try {
+    return await decrypt(session)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Centralized auth guard for API routes.
+ * Returns the session payload if valid, or null if unauthorized.
+ * Usage: const session = await requireAuth(); if (!session) return unauthorized();
+ */
+export async function requireAuth() {
+  return await getSession()
+}
+
+export function unauthorized() {
+  return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 }
 
 export async function updateSession(request: NextRequest) {
   const session = request.cookies.get('session')?.value
   if (!session) return
 
-  // Refresh the session so it doesn't expire
-  const parsed = await decrypt(session)
-  parsed.expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
-  const res = NextResponse.next()
-  res.cookies.set({
-    name: 'session',
-    value: await encrypt(parsed),
-    httpOnly: true,
-    expires: parsed.expires,
-  })
-  return res
+  try {
+    const parsed = await decrypt(session)
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    parsed.expires = expires
+    const res = NextResponse.next()
+    res.cookies.set({
+      name: 'session',
+      value: await encrypt(parsed),
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      expires,
+      path: '/',
+    })
+    return res
+  } catch {
+    // Session is invalid/expired; let middleware handle redirect
+    return null
+  }
 }

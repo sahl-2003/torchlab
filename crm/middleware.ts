@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { decrypt } from './src/lib/auth'
+import { decrypt, updateSession } from './src/lib/auth'
 
 export async function middleware(request: NextRequest) {
   const session = request.cookies.get('session')?.value
 
   // Define public routes that don't require authentication
-  const isPublicRoute = 
-    request.nextUrl.pathname === '/login' || 
+  const isPublicRoute =
+    request.nextUrl.pathname === '/login' ||
     request.nextUrl.pathname.startsWith('/api/auth')
 
   if (!session && !isPublicRoute) {
@@ -17,13 +17,15 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.nextUrl))
   }
 
-  // If session exists, verify it
+  // If session exists, verify it and slide the expiry (rolling session)
   if (session) {
     try {
       await decrypt(session)
-      return NextResponse.next()
+      // Refresh the session window on each valid request
+      const refreshed = await updateSession(request)
+      return refreshed ?? NextResponse.next()
     } catch (e) {
-      // Invalid session, redirect to login
+      // Invalid or expired session — clear cookie and redirect to login
       const response = NextResponse.redirect(new URL('/login', request.nextUrl))
       response.cookies.delete('session')
       return response
