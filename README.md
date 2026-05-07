@@ -55,11 +55,7 @@ CRM Plus is a modern, production-ready full-stack Customer Relationship Manageme
 Create a `.env` file in the root of the project. The application requires the following environment variables to run properly:
 
 ```env
-# Connection string to your PostgreSQL instance
-DATABASE_URL="postgresql://postgres:user@127.0.0.1:5432/crm_db?schema=public"
 
-# Secret used to sign authentication JWTs
-JWT_SECRET="super-secret-key-change-me"
 ```
 
 ## Test Login Credentials
