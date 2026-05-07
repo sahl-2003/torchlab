@@ -15,7 +15,8 @@ import {
   Edit,
   MoreVertical,
   Send,
-  Plus
+  Plus,
+  Trash2
 } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -209,20 +210,76 @@ export default function LeadDetailsPage({ params }: { params: Promise<{ id: stri
                  Action
               </Button>
             } />
-            <DropdownMenuContent align="end" className="rounded-xl w-48">
+            <DropdownMenuContent align="end" className="rounded-xl w-52">
               <DropdownMenuGroup>
                 <DropdownMenuLabel>Communicate</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => toast.success("Opening email composer...")}>
+                <DropdownMenuItem onClick={() => {
+                  if (lead.email) {
+                    window.open(`mailto:${lead.email}?subject=Follow up - ${lead.company}`, '_blank')
+                    toast.success("Opening email client...")
+                  } else {
+                    toast.error("No email address available")
+                  }
+                }}>
                   <Mail className="w-4 h-4 mr-2" /> Send Email
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => toast.success("Dialing lead...")}>
+                <DropdownMenuItem onClick={() => {
+                  if (lead.phone) {
+                    window.open(`tel:${lead.phone}`, '_self')
+                    toast.success("Initiating call...")
+                  } else {
+                    toast.error("No phone number available")
+                  }
+                }}>
                   <Phone className="w-4 h-4 mr-2" /> Start Call
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => toast.info("Activity logged")}>
-                Log Interaction
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>Update Status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {['NEW', 'CONTACTED', 'QUALIFIED', 'PROPOSAL_SENT', 'WON', 'LOST']
+                  .filter(s => s !== lead.status)
+                  .map(status => (
+                  <DropdownMenuItem key={status} onClick={async () => {
+                    try {
+                      const res = await fetch(`/api/leads/${leadId}`, {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status }),
+                      })
+                      if (!res.ok) throw new Error()
+                      toast.success(`Status updated to ${status.replace('_', ' ')}`)
+                      fetchLeadDetails()
+                    } catch {
+                      toast.error('Failed to update status')
+                    }
+                  }}>
+                    <span className={`w-2 h-2 rounded-full mr-2 ${
+                      status === 'NEW' ? 'bg-blue-500' :
+                      status === 'CONTACTED' ? 'bg-purple-500' :
+                      status === 'QUALIFIED' ? 'bg-indigo-500' :
+                      status === 'PROPOSAL_SENT' ? 'bg-orange-500' :
+                      status === 'WON' ? 'bg-emerald-500' : 'bg-rose-500'
+                    }`} />
+                    {status.replace('_', ' ')}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-rose-600" onClick={async () => {
+                if (!confirm('Are you sure you want to delete this lead? This cannot be undone.')) return
+                try {
+                  const res = await fetch(`/api/leads/${leadId}`, { method: 'DELETE' })
+                  if (!res.ok) throw new Error()
+                  toast.success('Lead deleted')
+                  window.location.href = '/dashboard/leads'
+                } catch {
+                  toast.error('Failed to delete lead')
+                }
+              }}>
+                <Trash2 className="w-4 h-4 mr-2" /> Delete Lead
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
