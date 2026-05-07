@@ -177,44 +177,38 @@ export default function LeadsPage() {
               />
             </div>
             <div className="flex items-center gap-3">
-              <DropdownMenu>
-                <DropdownMenuTrigger render={
-                  <Button variant="outline" className="rounded-xl h-11 border-slate-100 dark:border-slate-800">
-                    <Filter className="w-4 h-4 mr-2" />
-                    {statusFilter === 'ALL' ? 'All Statuses' : statusFilter}
-                  </Button>
-                } />
-                <DropdownMenuContent align="end" className="rounded-xl w-48">
-                  <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setStatusFilter('ALL')}>All Statuses</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStatusFilter('NEW')}>New</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStatusFilter('CONTACTED')}>Contacted</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStatusFilter('QUALIFIED')}>Qualified</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStatusFilter('PROPOSAL_SENT')}>Proposal Sent</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStatusFilter('WON')}>Won</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setStatusFilter('LOST')}>Lost</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="relative">
+                <Filter className="absolute left-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="appearance-none pl-10 pr-8 h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="ALL">All Statuses</option>
+                  <option value="NEW">New</option>
+                  <option value="CONTACTED">Contacted</option>
+                  <option value="QUALIFIED">Qualified</option>
+                  <option value="PROPOSAL_SENT">Proposal Sent</option>
+                  <option value="WON">Won</option>
+                  <option value="LOST">Lost</option>
+                </select>
+              </div>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger render={
-                  <Button variant="outline" className="rounded-xl h-11 border-slate-100 dark:border-slate-800">
-                    <Filter className="w-4 h-4 mr-2" />
-                    {sourceFilter === 'ALL' ? 'All Sources' : sourceFilter}
-                  </Button>
-                } />
-                <DropdownMenuContent align="end" className="rounded-xl w-48">
-                  <DropdownMenuLabel>Filter by Source</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setSourceFilter('ALL')}>All Sources</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSourceFilter('LINKEDIN')}>LinkedIn</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSourceFilter('WEBSITE')}>Website</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSourceFilter('REFERRAL')}>Referral</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSourceFilter('COLD_OUTREACH')}>Cold Outreach</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setSourceFilter('MANUAL')}>Manual Entry</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <div className="relative">
+                <Filter className="absolute left-3 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+                <select
+                  value={sourceFilter}
+                  onChange={(e) => setSourceFilter(e.target.value)}
+                  className="appearance-none pl-10 pr-8 h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="ALL">All Sources</option>
+                  <option value="LINKEDIN">LinkedIn</option>
+                  <option value="WEBSITE">Website</option>
+                  <option value="REFERRAL">Referral</option>
+                  <option value="COLD_OUTREACH">Cold Outreach</option>
+                  <option value="MANUAL">Manual Entry</option>
+                </select>
+              </div>
             </div>
           </div>
         </CardHeader>
