@@ -106,6 +106,7 @@ export default function Sidebar() {
                 {!isCollapsed && <span>Sign Out</span>}
               </Link>
             }
+            nativeButton={false}
           />
         </div>
       </div>

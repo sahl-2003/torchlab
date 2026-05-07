@@ -284,7 +284,7 @@ export default function LeadsPage() {
                           <DropdownMenuGroup>
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onSelect={() => lead.id && router.push(`/dashboard/leads/${lead.id}`)}>
+                            <DropdownMenuItem onClick={() => lead.id && router.push(`/dashboard/leads/${lead.id}`)}>
                               <Eye className="w-4 h-4 mr-2" /> View Details
                             </DropdownMenuItem>
                             <EditLeadDialog lead={lead} onLeadUpdated={fetchLeads} />

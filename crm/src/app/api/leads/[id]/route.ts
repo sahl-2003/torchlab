@@ -74,7 +74,7 @@ export async function GET(
       where: { id },
       include: {
         notes: { 
-          include: { createdBy: true },
+          include: { user: true },
           orderBy: { createdAt: 'desc' } 
         },
         activities: { 

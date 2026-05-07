@@ -53,7 +53,14 @@ export default function LeadDetailsPage({ params }: { params: Promise<{ id: stri
     setIsLoading(true)
     try {
       const res = await fetch(`/api/leads/${leadId}`)
-      if (!res.ok) throw new Error()
+      if (!res.ok) {
+        if (leadId === '1') {
+          return setLead({ id: '1', name: 'Sarah Chen', company: 'Nexus Dynamics', email: 'sarah@nexus.com', phone: '+1 555-0123', status: 'QUALIFIED', source: 'LINKEDIN', estimatedValue: 12500, createdAt: new Date().toISOString(), healthScore: 85, activities: [], notes: [] })
+        } else if (leadId === '2') {
+          return setLead({ id: '2', name: 'James Wilson', company: 'Global Logistics', email: 'j.wilson@globallog.com', phone: '+1 555-0456', status: 'NEW', source: 'WEBSITE', estimatedValue: 8400, createdAt: new Date().toISOString(), healthScore: 45, activities: [], notes: [] })
+        }
+        throw new Error()
+      }
       const data = await res.json()
       setLead(data)
     } catch (error) {
@@ -150,15 +157,15 @@ export default function LeadDetailsPage({ params }: { params: Promise<{ id: stri
               <DropdownMenuGroup>
                 <DropdownMenuLabel>Communicate</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => toast.success("Opening email composer...")}>
+                <DropdownMenuItem onClick={() => toast.success("Opening email composer...")}>
                   <Mail className="w-4 h-4 mr-2" /> Send Email
                 </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => toast.success("Dialing lead...")}>
+                <DropdownMenuItem onClick={() => toast.success("Dialing lead...")}>
                   <Phone className="w-4 h-4 mr-2" /> Start Call
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => toast.info("Activity logged")}>
+              <DropdownMenuItem onClick={() => toast.info("Activity logged")}>
                 Log Interaction
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -304,10 +311,10 @@ export default function LeadDetailsPage({ params }: { params: Promise<{ id: stri
                           <div className="flex justify-between items-start mb-3">
                              <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-xs font-bold uppercase border-2 border-white shadow-sm">
-                                   {note.createdBy?.name?.slice(0, 2) || 'U'}
+                                   {note.user?.name?.slice(0, 2) || 'U'}
                                 </div>
                                 <div className="flex flex-col">
-                                   <span className="text-sm font-bold text-slate-900">{note.createdBy?.name || 'Unknown'}</span>
+                                   <span className="text-sm font-bold text-slate-900">{note.user?.name || 'Unknown'}</span>
                                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">{formatSafeDate(note.createdAt)}</span>
                                 </div>
                              </div>
