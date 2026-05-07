@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      UserRole   @default(SALESPERSON)
+  leads     Lead[]     @relation("AssignedLeads")
+  notes     Note[]
+  activities Activity[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+enum UserRole {
+  ADMIN
+  SALESPERSON
+}
+
+model Lead {
+  id                String       @id @default(cuid())
+  name              String
+  company           String
+  email             String?
+  phone             String?
+  source            String?
+  status            LeadStatus   @default(NEW)
+  priority          LeadPriority @default(MEDIUM)
+  estimatedValue    Float?
+  nextFollowUp      DateTime?
+  tags              String[]
+  healthScore       Int?         @default(50)
+  
+  salesperson       User?        @relation("AssignedLeads", fields: [salespersonId], references: [id])
+  salespersonId     String?
+
+  notes             Note[]
+  activities        Activity[]
+  followUps         FollowUp[]
+  
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  WON
+  LOST
+}
+
+enum LeadPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  content   String
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId    String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+}
+
+model Activity {
+  id          String       @id @default(cuid())
+  type        ActivityType
+  description String
+  lead        Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId      String
+  user        User?        @relation(fields: [userId], references: [id])
+  userId      String?
+  createdAt   DateTime     @default(now())
+}
+
+enum ActivityType {
+  STATUS_CHANGE
+  NOTE_ADDED
+  FOLLOW_UP_CREATED
+  LEAD_CREATED
+  LEAD_UPDATED
+}
+
+model FollowUp {
+  id          String   @id @default(cuid())
+  title       String
+  date        DateTime
+  completed   Boolean  @default(false)
+  lead        Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  leadId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
