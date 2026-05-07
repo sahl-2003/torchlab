@@ -64,6 +64,21 @@ export default function DashboardPage() {
   const recentActivities = data.recentActivities
   const health = data.health
 
+  const exportDashboardReport = () => {
+    if (!data || !data.chartData) return;
+    const headers = ['Month', 'Revenue'];
+    const csvData = data.chartData.map((d: any) => [d.name, d.revenue]);
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + csvData.map((e: any[]) => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "dashboard_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Dashboard report downloaded successfully");
+  };
+
   const stats = [
     { 
       title: 'Total Leads', 
@@ -158,7 +173,7 @@ export default function DashboardPage() {
               variant="outline" 
               size="sm" 
               className="rounded-xl h-9"
-              onClick={() => toast.success("Generating report... Your download will start shortly.")}
+              onClick={exportDashboardReport}
             >
               Download Report
             </Button>

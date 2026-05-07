@@ -81,6 +81,21 @@ export default function AnalyticsPage() {
     { label: 'Win Rate', value: `${stats.winRate || 0}%`, change: stats.winRateChange, trend: 'up', icon: Target },
     { label: 'Active Leads', value: stats.activeLeads?.toString() || '0', change: stats.activeLeadsChange, trend: 'up', icon: Users },
   ]
+
+  const exportAnalyticsReport = () => {
+    if (!data || !data.revenueData) return;
+    const headers = ['Month', 'Current Revenue', 'Target Revenue'];
+    const csvData = data.revenueData.map((d: any) => [d.month, d.current, d.target]);
+    const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + csvData.map((e: any[]) => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "analytics_report.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Analytics report downloaded successfully");
+  };
   return (
     <div className="space-y-8 pb-10">
       <div>
@@ -118,7 +133,7 @@ export default function AnalyticsPage() {
                 variant="outline" 
                 size="sm" 
                 className="rounded-xl h-9"
-                onClick={() => toast.success("Generating analytics report... Your PDF will be ready in a moment.")}
+                onClick={exportAnalyticsReport}
               >
                 Download Report
               </Button>
