@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { decrypt } from './lib/auth'
+import { decrypt } from './src/lib/auth'
 
 export async function middleware(request: NextRequest) {
   const session = request.cookies.get('session')?.value
